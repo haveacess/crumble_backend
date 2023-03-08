@@ -1,0 +1,44 @@
+version: '3.4'
+
+services:
+  nginx:
+    image: nginx:1.23
+    ports:
+      - ${NGINX_PORT}:80
+    volumes:
+      - type: bind
+        source: ${NGINX_CONF}
+        target: /etc/nginx/nginx.conf
+        read_only: true
+      - ${NGINX_LOGS_FOLDER}:/var/log/nginx
+      - ${NGINX_STATIC_FILES_FOLDER}:/var/www/static
+    volumes_from:
+      - backend_volumes
+  php:
+    build: ./containers/php
+    volumes_from:
+      - backend_volumes
+    environment:
+      - APP_NAME=${LARAVEL_APP_NAME}
+      - APP_ENV=${LARAVEL_APP_ENV}
+      - APP_KEY=${LARAVEL_APP_KEY}
+      - APP_DEBUG=${LARAVEL_APP_DEBUG}
+      - LOG_CHANNEL=${LARAVEL_LOG_CHANNEL}
+      - MARIADB_PORT
+      - MARIADB_DATABASE
+      - MARIADB_USER
+      - MARIADB_PASSWORD
+    command: sh -c "composer install && php-fpm"
+  maria_db:
+    image: mariadb:10.3
+    ports:
+      - ${MARIADB_PORT}:3306
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+  backend_volumes:
+    image: busybox
+    volumes:
+      - ${CODE_FOLDER}:/var/www/html
