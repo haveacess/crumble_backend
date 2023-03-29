@@ -33,6 +33,8 @@ services:
     image: mariadb:10.3
     ports:
       - ${MARIADB_PORT}:3306
+    volumes:
+      - maria_db_data:/var/lib/mysql
     environment:
       MARIADB_DATABASE: ${MARIADB_DATABASE}
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
@@ -42,3 +44,6 @@ services:
     image: busybox
     volumes:
       - ${CODE_FOLDER}:/var/www/html
+
+volumes:
+  maria_db_data:
