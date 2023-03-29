@@ -14,15 +14,23 @@ class ItemsSeeder extends Seeder
      */
     public function run(): void
     {
-        $csgoItems = Arr::map([
-            'AK-47 | Slate (Field-Tested)',
-            'AWP | Graphite (Factory New)',
-            'AK-47 | Asiimov (Field-Tested)',
-            'AK-47 | Ice Coaled (Field-Tested)'
-        ], function ($marketHashName) {
-            return ['id_app' => 730, 'market_hash_name' => $marketHashName];
-        });
-
-        DB::table('items')->insert($csgoItems);
+        DB::table('items')->insert([
+            [
+                'id_app' => 730, 'id_class' => 5224946682, 'id_instance' => 480085569,
+                'market_hash_name' => 'Glock-18 | Night (Field-Tested)'
+            ],
+            [
+                'id_app' => 730, 'id_class' => 5152572261, 'id_instance' => 188530139,
+                'market_hash_name' => 'AK-47 | Slate (Field-Tested)'
+            ],
+            [
+                'id_app' => 730, 'id_class' => 5240627398, 'id_instance' => 480085569,
+                'market_hash_name' => 'AK-47 | Asiimov (Field-Tested)'
+            ],
+            [
+                'id_app' => 730, 'id_class' => 4113017952, 'id_instance' => 188530139,
+                'market_hash_name' => 'AWP | Graphite (Factory New)'
+            ]
+        ]);
     }
 }

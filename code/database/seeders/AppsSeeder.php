@@ -14,7 +14,7 @@ class AppsSeeder extends Seeder
     public function run(): void
     {
         DB::table('apps')->insert([
-            'id' => 730, 'name' => 'CS:GO'
+            'id' => 730, 'id_context' => 2, 'name' => 'CS:GO'
         ]);
     }
 }

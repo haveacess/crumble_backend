@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('apps', function (Blueprint $table) {
             $table->increments('id');
+            $table->integer('id_context');
             $table->string('name');
         });
     }

@@ -19,6 +19,9 @@ return new class extends Migration
                 ->references('id')->on('apps')
                 ->cascadeOnDelete();
 
+            $table->foreignId('id_class');
+            $table->foreignId('id_instance');
+
             $table->string('market_hash_name', 250);
         });
     }
