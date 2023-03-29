@@ -2,71 +2,93 @@
 
 namespace App\Services\Steam;
 
-use App\Entities\UserInfo;
+use App\Exceptions\UnauthorizedUserException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\FileCookieJar;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\DomCrawler\Crawler;
 
 class AuthService {
 
-    const COOKIE_PATH = 'steamAuth/default_user.json';
-    const BASE_URI = 'https://steamcommunity.com/';
+    private const COOKIE_FOLDER = 'steamAuth/';
+    private const BASE_URI = 'https://steamcommunity.com/';
+    private const LOGIN_SECURE_PATTERN = '/^(?<steam_id64>\d*)\|\|(?<jwt_base_info>.*)\.(?<jwt_token>.*)\.(?<secret>.*)$/';
 
-    private Client $client;
+    protected Client $client;
+    protected string $profileAlias;
 
-    public function __construct()
+    /**
+     * Create auth instance for get access to authorized data
+     *
+     * @param string $profileAlias For identifying and understanding what is your profile
+     * ex. main_profile or only_big_deals
+     */
+    public function __construct(string $profileAlias)
     {
+        $this->profileAlias = $profileAlias;
+
         $this->client = new Client([
             'base_uri' => self::BASE_URI,
-            'cookies' => self::getCookieContainer()
+            'cookies' => $this->getCookieContainer()
         ]);
     }
 
     /**
-     * Get container which store cookies.
+     * Getting profile alias
      *
-     * If container exist - retrived exist cookies
-     * Otherwise - will be creating a new empty container
-     *
-     * @return FileCookieJar Cookie container for init guzzle http client
+     * @return string
      */
-    public static function getCookieContainer(): FileCookieJar
+    public function getProfileAlias(): string
     {
-        $isExistContainer = Storage::disk('local')->exists(self::COOKIE_PATH);
-
-        if (!$isExistContainer) {
-            Storage::disk('local')->put(self::COOKIE_PATH, '');
-        }
-
-        return new FileCookieJar(Storage::disk('local')->path(self::COOKIE_PATH), true);
+        return $this->profileAlias;
     }
 
     /**
-     * Get a base info of login user
+     * Getting the path for storage your profile cookie files
      *
-     * @return UserInfo
+     * @return string
      */
-    public function getUserInfo(): UserInfo
+    public function getCookieContainerPath(): string
     {
-        $html = $this->client->get('/')->getBody();
+        return self::COOKIE_FOLDER . $this->profileAlias . '.json';
+    }
 
-        $crawler = new Crawler($html);
-        $userHtml = $crawler->filter('#application_config')->first();
+    /**
+     * Getting container with cookies for manipulate this profile
+     *
+     * @return FileCookieJar Cookie container for use in requests
+     * ex. in Guzzle
+     */
+    protected function getCookieContainer(): FileCookieJar
+    {
+        $containerPath = $this->getCookieContainerPath();
+        $isExistContainer = Storage::disk('local')->exists($containerPath);
 
-        $userJson = json_decode($userHtml->attr('data-userinfo'));
-
-        if (empty($userJson)) {
-            return new UserInfo(false);
+        if (!$isExistContainer) {
+            Storage::disk('local')->put($containerPath, '');
         }
 
-        $user = new UserInfo();
-        $user->isLoggedIn = $userJson->logged_in;
-        $user->login = $userJson->account_name;
-        $user->accountId = $userJson->accountid;
-        $user->countryCode = $userJson->country_code;
-        $user->steamId64 = (int)$userJson->steamid;
+        return new FileCookieJar(Storage::disk('local')->path($containerPath), true);
+    }
 
-        return $user;
+    /**
+     * Get Steam ID 64 from cookie container
+     *
+     * @throws UnauthorizedUserException
+     */
+    protected function getSteamID64(): int
+    {
+        $cookie = $this->getCookieContainer()->getCookieByName('steamLoginSecure');
+
+        if (is_null($cookie)) {
+            throw new UnauthorizedUserException($this->getProfileAlias());
+        }
+
+        preg_match(self::LOGIN_SECURE_PATTERN, urldecode($cookie->getValue()), $info);;
+
+        if (!isset($info['steam_id64'])) {
+            throw new UnauthorizedUserException($this->getProfileAlias());
+        }
+
+        return (int)$info['steam_id64'];
     }
 }
