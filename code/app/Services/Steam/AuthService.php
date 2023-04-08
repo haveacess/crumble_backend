@@ -15,6 +15,7 @@ class AuthService {
 
     protected Client $client;
     protected string $profileAlias;
+    private FileCookieJar $cookieContainer;
 
     /**
      * Create auth instance for get access to authorized data
@@ -25,6 +26,8 @@ class AuthService {
     public function __construct(string $profileAlias)
     {
         $this->profileAlias = $profileAlias;
+
+        $this->setCookieContainer();
 
         $this->client = new Client([
             'base_uri' => self::BASE_URI,
@@ -43,6 +46,16 @@ class AuthService {
     }
 
     /**
+     * Checking if container empty or not
+     *
+     * @return bool
+     */
+    public function isEmptyCookieContainer(): bool
+    {
+        return $this->cookieContainer->count() === 0;
+    }
+
+    /**
      * Getting the path for storage your profile cookie files
      *
      * @return string
@@ -53,13 +66,11 @@ class AuthService {
     }
 
     /**
-     * Getting container with cookies for manipulate this profile
+     * Setting cookie container
      *
-     * @return FileCookieJar Cookie container for use in requests
-     * ex. in Guzzle
+     * @return void
      */
-    protected function getCookieContainer(): FileCookieJar
-    {
+    private function setCookieContainer() {
         $containerPath = $this->getCookieContainerPath();
         $isExistContainer = Storage::disk('local')->exists($containerPath);
 
@@ -67,7 +78,18 @@ class AuthService {
             Storage::disk('local')->put($containerPath, '');
         }
 
-        return new FileCookieJar(Storage::disk('local')->path($containerPath), true);
+        $this->cookieContainer = new FileCookieJar(Storage::disk('local')->path($containerPath), true);
+    }
+
+    /**
+     * Getting container with cookies for manipulate this profile
+     *
+     * @return FileCookieJar Cookie container for use in requests
+     * ex. in Guzzle
+     */
+    public function getCookieContainer(): FileCookieJar
+    {
+        return $this->cookieContainer;
     }
 
     /**
