@@ -4,31 +4,36 @@ namespace App\Console\Commands\Steam;
 
 use App\Exceptions\UnauthorizedUserException;
 use App\Services\Steam\UserService;
+use App\Traits\Env\SteamUsersTrait;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Console\Command;
 
 class GetUserInfo extends Command
 {
+    use SteamUsersTrait;
+
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'steam:get-user-info';
+    protected $signature = 'steam:get-user-info
+                            {userAlias?}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Get base info about authenticated steam user';
+    protected $description = 'Get base info about authenticated user';
 
     /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        $userService = new UserService('vladya_merchant');
+        $userAlias = $this->argument('userAlias') ?? $this->getDefaultUser();
+        $userService = new UserService($userAlias);
 
         try {
             $userInfo = $userService->getBaseInfo(false)->toArray();

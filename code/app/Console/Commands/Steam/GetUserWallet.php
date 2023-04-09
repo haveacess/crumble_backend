@@ -4,17 +4,21 @@ namespace App\Console\Commands\Steam;
 
 use App\Exceptions\UnauthorizedUserException;
 use App\Services\Steam\UserService;
+use App\Traits\Env\SteamUsersTrait;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Console\Command;
 
 class GetUserWallet extends Command
 {
+    use SteamUsersTrait;
+
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'steam:get-user-wallet';
+    protected $signature = 'steam:get-user-wallet
+                            {userAlias?}';
 
     /**
      * The console command description.
@@ -28,7 +32,8 @@ class GetUserWallet extends Command
      */
     public function handle(): int
     {
-        $userService = new UserService('vladya_merchant');
+        $userAlias = $this->argument('userAlias') ?? $this->getDefaultUser();
+        $userService = new UserService($userAlias);
         try {
             $wallet = $userService->getWallet();
             $this->info("Balance: {$wallet->getBalance()} {$wallet->getCurrency()}");
