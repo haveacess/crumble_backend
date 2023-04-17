@@ -2,8 +2,8 @@
 
 namespace App\Services\Steam\ImportService;
 
+use App\Classes\Formatter\FormatterUpperKey;
 use App\Entities\Cookie\CookieContainerEntity;
-use App\Entities\Cookie\Formatter\FormatterUpperKey;
 use App\Exceptions\DeniedOperationException;
 use App\Exceptions\InvalidCookieException;
 use App\Services\Steam\AuthService;

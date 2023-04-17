@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Entities\Cookie\Formatter;
+namespace App\Classes\Formatter;
 
 use App\Entities\Cookie\CookieEntity;
 

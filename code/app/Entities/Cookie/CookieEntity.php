@@ -2,7 +2,7 @@
 
 namespace App\Entities\Cookie;
 
-use App\Entities\Cookie\Formatter\Formatter;
+use App\Classes\Formatter\Formatter;
 
 class CookieEntity
 {
