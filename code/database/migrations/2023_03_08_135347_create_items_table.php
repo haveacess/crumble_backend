@@ -23,6 +23,7 @@ return new class extends Migration
             $table->foreignId('id_instance');
 
             $table->string('market_hash_name', 250);
+            $table->dateTime('updated_at')->useCurrent();
         });
     }
 
