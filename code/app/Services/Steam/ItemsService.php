@@ -5,14 +5,17 @@ namespace App\Services\Steam;
 use App\Classes\Pagination;
 use App\Classes\Filter\Filter;
 use App\Entities\ItemEntity;
+use App\Exceptions\NotFoundEntityException;
+use App\Models\AppsModel;
+use App\Models\ItemModel;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Support\Arr;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ItemsService extends AuthService {
 
-    private int $appId = 730; // set in construct
-    // add validation by model in construct
+    private const ITEM_NOT_TRADABLE = 0;
 
     private const MARKETPLACE_ITEMS_ENDPOINT = 'market/search/render/';
 
@@ -46,7 +49,7 @@ class ItemsService extends AuthService {
         return array_reduce($body->results, function ($result, $item) {
             $asset = $item->asset_description;
 
-            if ($asset->tradable === 0) {
+            if ($asset->tradable === self::ITEM_NOT_TRADABLE) {
                 Log::alert('Item was skipped because isn\'t tradable', [
                     'item' => $asset->market_hash_name
                 ]);
@@ -64,5 +67,32 @@ class ItemsService extends AuthService {
         }, []);
     }
 
-    // somewhere send items to database (tranasction!! by chunk XX items)
+    /**
+     * Updating items in database <br>
+     * All the operations will be in transaction
+     *
+     * @param ItemEntity[] $items List of items need to be pushed
+     * @throws QueryException Failed updating or creating new items.
+     * The transaction was canceled
+     * @return bool Return true if all right
+     */
+    public function updateItems(array $items): bool {
+        DB::transaction(function () use ($items) {
+            foreach ($items as $item) {
+                $model = ItemModel::where([
+                    'id_class' => $item->idClass,
+                    'id_instance' => $item->idInstance
+                ])->limit(1);
+
+                if ($model->exists()) {
+                    $model->touch(); // just mark as update
+                    continue;
+                }
+
+                $item->toModel()->save();
+            }
+        });
+
+        return true;
+    }
 }

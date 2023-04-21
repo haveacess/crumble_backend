@@ -4,9 +4,14 @@ namespace App\Console\Commands\Steam;
 
 use App\Classes\Filter\Steam\CSGOFilter;
 use App\Classes\Pagination;
+use App\Exceptions\NotFoundEntityException;
 use App\Services\Steam\ItemsService;
 use App\Traits\Env\SteamUsersTrait;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Console\Command;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Arr;
 
 class UpdateDBItems extends Command
 {
@@ -29,26 +34,48 @@ class UpdateDBItems extends Command
 
     /**
      * Execute the console command.
+     * @throws NotFoundEntityException
      */
     public function handle(): void
     {
         $userAlias = $this->argument('userAlias') ?? $this->getDefaultUser();
-        $x = new ItemsService($userAlias); // add $appId instead of 730 by hardcode
+        $itemsService = new ItemsService($userAlias);
 
         $filter = CSGOFilter::getMarketplaceItems();
-        $pagination = new Pagination(null, 0, 10); // 10 > 100
+        $pagination = new Pagination(null, 0, 100);
         $pagination->addRateLimiter(5);
 
-        // save by 100 items as transaction!
-
         do {
-            $this->confirm('press yes'); // just temporary
+            if (App::hasDebugModeEnabled()) {
+                $isConfirmed = $this->confirm('Agree for continue, or abort for break');
 
-            $f = $x->fetchItems($filter, $pagination);
-            // add guzzle throws. wrap another page (not all pages)
+                if (!$isConfirmed) {
+                    $this->info('Aborted..');
+                    break;
+                }
+            }
 
-            // $f[0]->toModel()->save();
-            // something do with fetched items
+            try {
+                $this->info(vsprintf('Fetch another items. Offset %s/%s', [
+                    $pagination->getOffset(),
+                    $pagination->getTotalItemsCount()
+                ]));
+
+                $items = $itemsService->fetchItems($filter, $pagination);
+                $this->info('Items fetched. Updated..');
+
+                $this->table(['market_hash_name'], Arr::map($items, function ($item) {
+                    return ['market_hash_name' => $item->marketHashName];
+                }));
+
+                $itemsService->updateItems($items);
+            } catch (GuzzleException $e) {
+                report($e);
+                $this->error('Error fetching another items');
+            } catch (QueryException $e) {
+                report($e);
+                $this->error('Something items can\'t updated or inserted');
+            }
         } while ($pagination->nextPage());
     }
 }

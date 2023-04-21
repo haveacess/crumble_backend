@@ -38,9 +38,20 @@ class Pagination {
      * @param int $totalItemsCount
      * @return $this
      */
-    public function setTotalItemsCount(int $totalItemsCount):Pagination {
+    public function setTotalItemsCount(int $totalItemsCount):Pagination
+    {
         $this->totalItemsCount  = $totalItemsCount;
         return  $this;
+    }
+
+    /**
+     * Get total items count
+     *
+     * @return null|int
+     */
+    public function getTotalItemsCount(): null|int
+    {
+        return $this->totalItemsCount;
     }
 
     /**
