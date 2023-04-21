@@ -3,8 +3,9 @@
 namespace App\Exceptions;
 
 use Exception;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
-class DeniedOperationException extends Exception
+class DeniedOperationException extends Exception implements HttpExceptionInterface
 {
     /**
      * This status code will be returned
@@ -16,6 +17,11 @@ class DeniedOperationException extends Exception
     public function getStatusCode(): int
     {
         return 409;
+    }
+
+    public function getHeaders(): array
+    {
+        return [];
     }
 
     /**

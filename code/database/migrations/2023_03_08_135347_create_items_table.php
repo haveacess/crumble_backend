@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('items', function (Blueprint $table) {
             $table->increments('id');
+            $table->unique(['id_class', 'id_instance']);
 
             $table->unsignedInteger('id_app');
             $table->foreign('id_app')
@@ -23,6 +24,7 @@ return new class extends Migration
             $table->foreignId('id_instance');
 
             $table->string('market_hash_name', 250);
+            $table->dateTime('updated_at')->useCurrent();
         });
     }
 
