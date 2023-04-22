@@ -34,7 +34,6 @@ class UpdateDBItems extends Command
 
     /**
      * Execute the console command.
-     * @throws NotFoundEntityException
      */
     public function handle(): void
     {
