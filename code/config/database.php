@@ -37,7 +37,7 @@ return [
         'mysql' => [
             'driver' => 'mysql',
             'url' => '',
-            'host' => 'host.docker.internal',
+            'host' => env('MARIADB_HOST'),
             'port' => env('MARIADB_PORT'),
             'database' => env('MARIADB_DATABASE'),
             'username' => env('MARIADB_USER'),
