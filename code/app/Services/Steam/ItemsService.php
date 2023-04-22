@@ -18,6 +18,7 @@ class ItemsService extends AuthService {
     private const ITEM_NOT_TRADABLE = 0;
 
     private const MARKETPLACE_ITEMS_ENDPOINT = 'market/search/render/';
+    private const MARKETPLACE_PRICE_HISTORY_ENDPOINT = '/market/pricehistory/';
 
     /**
      * Receiving list of items on marketplace
@@ -94,5 +95,27 @@ class ItemsService extends AuthService {
         });
 
         return true;
+    }
+
+    // get price history for specific item
+    // array is temporary -> maybe return entity in feature
+    public function getPriceHistory(ItemModel $item): array {
+        $history = $this->client->get(self::MARKETPLACE_ITEMS_ENDPOINT, [
+            'query' => [
+                'appId' => $item->id_app,
+                'market_hash_name' => $item->market_hash_name
+            ]
+        ]);
+
+        $body = json_decode($history->getBody());
+        echo $body;
+
+        return [];
+    }
+
+    // update price history for specific item in database
+    public function updatePriceHistory(ItemModel $item, array $prices)
+    {
+
     }
 }
