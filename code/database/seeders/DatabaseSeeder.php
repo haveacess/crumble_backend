@@ -14,7 +14,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AppsSeeder::class,
             ItemsSeeder::class,
-            MarketsSeeder::class
+            MarketsSeeder::class,
+            CurrenciesSeeder::class
         ]);
     }
 }

@@ -19,12 +19,11 @@ return new class extends Migration
             $table->increments('id');
 
             $table->string('name', 3);
-            $table->decimal('rate', 5, 2)->comment('to 1 USD');
+            $table->decimal('rate', 5, 2)->comment('to 1 USD')->nullable();
             $table->string('suffix', 4);
         });
 
         $this->addRestriction('currencies', new UpperCase('name'));
-        $this->addRestriction('currencies', new LowerCase('suffix'));
     }
 
     /**
