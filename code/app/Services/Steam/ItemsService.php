@@ -5,13 +5,21 @@ namespace App\Services\Steam;
 use App\Classes\Pagination;
 use App\Classes\Filter\Filter;
 use App\Entities\ItemEntity;
-use App\Exceptions\NotFoundEntityException;
-use App\Models\AppsModel;
+use App\Entities\PriceHistoryDenormalizedEntity;
+use App\Entities\PriceHistoryEntity;
+use App\Exceptions\UnauthorizedUserException;
+use App\Helpers\TempTableHelper;
 use App\Models\ItemModel;
+use App\Models\Temp\PricesHistoryTempModel;
+use Carbon\Carbon;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ItemsService extends AuthService {
 
@@ -99,18 +107,60 @@ class ItemsService extends AuthService {
 
     // get price history for specific item
     // array is temporary -> maybe return entity in feature
-    public function getPriceHistory(ItemModel $item): array {
-        $history = $this->client->get(self::MARKETPLACE_ITEMS_ENDPOINT, [
-            'query' => [
-                'appId' => $item->id_app,
-                'market_hash_name' => $item->market_hash_name
-            ]
-        ]);
+    public function fetchPriceHistory(ItemModel $item): array {
+        try {
+            $history = $this->client->get(self::MARKETPLACE_PRICE_HISTORY_ENDPOINT, [
+                'query' => [
+                    'appid' => $item->id_app,
+                    'market_hash_name' => $item->market_hash_name
+                ]
+            ]);
 
-        $body = json_decode($history->getBody());
-        echo $body;
+             $body = json_decode($history->getBody());
 
-        return [];
+            // temporary fetching from file
+            // $body = json_decode(Storage::disk('local')->get('test/price_history/test_item.json'));
+
+            $denormalizedPrices = array_reduce($body->prices, function ($result, $item) {
+                $priceHistory = new PriceHistoryEntity();
+                $priceHistory->date = $priceHistory::getDateFromSteamTimestamp($item[0]);
+                $priceHistory->medianPrice = $item[1];
+                $priceHistory->volume = (int)$item[2];
+
+                return array_merge(
+                    $result,
+                    PriceHistoryDenormalizedEntity::fromPriceHistory($priceHistory)
+                );
+            }, []);
+
+            $pricesHistoryTemp = new TempTableHelper('prices_history_temp');
+            $pricesHistoryTemp->recreate();
+
+            DB::transaction(function () use ($denormalizedPrices) {
+                foreach ($denormalizedPrices as $price)
+                {
+                    $price->toModel()->save();
+                }
+            });
+
+            $medianPrices = PricesHistoryTempModel::getMedianPrices();
+
+            return $medianPrices->get()->map(function ($price) {
+                $entity = new PriceHistoryEntity();
+                $entity->date = Carbon::createFromFormat('Y-m-d', $price->date)->setTime(0, 0);
+                $entity->medianPrice = $price->converted_price;
+                $entity->volume = $price->volume;
+
+                return $entity;
+            })->toArray();
+
+        } catch (RequestException $e) {
+            report($e);
+            if ($e->getResponse()->getStatusCode() === 400) {
+                throw new UnauthorizedUserException($this->profileAlias);
+            }
+            throw $e;
+        }
     }
 
     // update price history for specific item in database
