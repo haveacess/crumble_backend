@@ -20,9 +20,6 @@ return new class extends Migration
             $table->decimal('median_price', 6, 2);
 
             $table->unsignedInteger('id_currency');
-            $table->foreign('id_currency')
-                ->references('id')->on('currencies')
-                ->cascadeOnDelete();
         });
     }
 
