@@ -4,8 +4,7 @@ namespace App\Console\Commands\Steam;
 
 use App\Classes\Filter\Steam\CSGOFilter;
 use App\Classes\Pagination;
-use App\Exceptions\NotFoundEntityException;
-use App\Services\Steam\ItemsService;
+use App\Services\Steam\Marketplace\DatabaseService;
 use App\Traits\Env\SteamUsersTrait;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Console\Command;
@@ -38,7 +37,7 @@ class UpdateDBItems extends Command
     public function handle(): void
     {
         $userAlias = $this->argument('userAlias') ?? $this->getDefaultUser();
-        $itemsService = new ItemsService($userAlias);
+        $itemsService = new DatabaseService($userAlias);
 
         $filter = CSGOFilter::getMarketplaceItems();
         $pagination = new Pagination(null, 0, 100);

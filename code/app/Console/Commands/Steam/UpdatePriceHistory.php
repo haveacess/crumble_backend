@@ -4,7 +4,7 @@ namespace App\Console\Commands\Steam;
 
 use App\Exceptions\NotFoundEntityException;
 use App\Models\ItemModel;
-use App\Services\Steam\ItemsService;
+use App\Services\Steam\Marketplace\PriceHistoryService;
 use App\Traits\Env\SteamUsersTrait;
 use Illuminate\Console\Command;
 
@@ -43,9 +43,9 @@ class UpdatePriceHistory extends Command
                     throw new NotFoundEntityException($marketHashName, ItemModel::class);
                 });
 
-            $service = new ItemsService($userAlias);
+            $service = new PriceHistoryService($userAlias);
 
-            $history = $service->getPriceHistory($itemModel);
+            $history = $service->fetchItemPrices($itemModel);
 
             return self::SUCCESS;
         } catch (NotFoundEntityException) {
